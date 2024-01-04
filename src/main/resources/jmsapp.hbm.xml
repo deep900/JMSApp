@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE hibernate-mapping PUBLIC "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+	<class name="com.oradnata.data.entity.MetadataEntity"
+		table="GFF_NOTIFICATIONMSG_TRACK">
+		<id name="seqId">
+			<generator class="assigned"></generator>
+		</id>
+		<property name="filePath"></property>
+		<property name="fileName"></property>
+		<property name="createdDate"></property>
+		<property name="updatedDate"></property>
+		<property name="flag"></property>
+		<property name="oicInstanceId"></property>
+		<property name="errorMsg"></property>
+		<property name="attribute1"></property>
+		<property name="attribute2"></property>
+		<property name="attribute3"></property>
+	</class>
+</hibernate-mapping>  
