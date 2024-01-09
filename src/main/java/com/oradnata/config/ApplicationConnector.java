@@ -7,12 +7,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Properties;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ApplicationConnector {
 
+	private static final Logger log = LogManager.getLogger(ApplicationConnector.class);
+	
 	private Properties properties = null;
 
 	private void loadAppProperties() {
@@ -23,14 +26,9 @@ public class ApplicationConnector {
 				properties = new Properties();
 				properties.load(fis);
 			} catch (FileNotFoundException err) {
-				StringWriter errors = new StringWriter();
-				err.printStackTrace(new PrintWriter(errors));
-				System.out.println("Error while loading the properties:" + errors.toString());
-			} catch (IOException err) {
-				StringWriter errors = new StringWriter();
-				err.printStackTrace(new PrintWriter(errors));
-				System.out.println("Error while loading the properties:" + errors.toString());
-				err.printStackTrace();
+				log.error("Error while loading the properties", err);
+			} catch (IOException err) {		
+				log.error("Error while loading the properties", err);
 			}
 		}
 	}

@@ -3,47 +3,43 @@
  */
 package com.oradnata.jms;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
+import javax.annotation.PostConstruct;
 import javax.jms.JMSException;
 import javax.jms.TextMessage;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * Listens to the JMS Messages.
  */
 @Component
-@Slf4j
-public class DMessageListener implements ApplicationEventPublisherAware {
-
+public class DMessageListener implements ApplicationEventPublisherAware{
+	
+	private static final Logger log = LogManager.getLogger(DMessageListener.class);
+	
 	public DMessageListener() {
-		System.out.println("Loading the JMS Listener.");
+		log.info("Loading the JMS Listener.");
 	}
 
-	private ApplicationEventPublisher eventPublisher;
+	private ApplicationEventPublisher eventPublisher;		
 
 	@Autowired
-	private JMSCountService jmsCountService;
+	private JMSConnectionDetails queueName;
 
-	private SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
-
-	@JmsListener(destination = "#{@queueName.getQueue}")
+	@JmsListener(destination = "#{@jmsConnectionDetails.getQueue}")
 	public void onMessage(Object message) {
-		log.info("Inside on message: " + message.toString() + "Class:" + message.getClass().getName());
+		log.info("Inside on message: " + message.toString() + "Class:" + message.getClass().getName());		
 		TextMessage textMessage = (TextMessage) message;
 		try {
-			this.eventPublisher.publishEvent(getApplicationEvent(textMessage.getBody(String.class).toString()));
-			this.incrementJmsCount();
-		} catch (JMSException e) {
-			e.printStackTrace();
+			this.eventPublisher.publishEvent(getApplicationEvent(textMessage.getBody(String.class).toString()));		
+		} catch (JMSException err) {
+			log.error("Error on message",err);			
 		}
 	}
 
@@ -55,18 +51,9 @@ public class DMessageListener implements ApplicationEventPublisherAware {
 	public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
 		this.eventPublisher = applicationEventPublisher;
 	}
-
-	private String getCurrentDate() {
-		Date obj = new Date();
-		return sdf.format(obj);
-	}
-
-	private void incrementJmsCount() {
-		int counter = 0;
-		if (jmsCountService.getJmsInformation().containsKey(getCurrentDate())) {
-			Object count = jmsCountService.getJmsInformation().get(getCurrentDate());
-			counter = (Integer) count;
-		}
-		jmsCountService.getJmsInformation().put(getCurrentDate(), counter + 1);
+	
+	@PostConstruct
+	public void printQueue() {
+		log.info("Printing the queuename from post const" + queueName.getQueue());
 	}
 }

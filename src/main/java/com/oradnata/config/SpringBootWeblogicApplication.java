@@ -2,52 +2,73 @@ package com.oradnata.config;
 
 import java.util.Properties;
 
+import javax.jms.ConnectionFactory;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration;
+import org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import com.oradnata.jms.QueueName;
+import com.oradnata.jms.JMSConnectionDetails;
 
-import lombok.extern.slf4j.Slf4j;
-
-@SpringBootApplication(/* exclude = { ActiveMQAutoConfiguration.class } */)
-@ComponentScan(basePackages = "com.oradnata")
-@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class,
-		DataSourceTransactionManagerAutoConfiguration.class, HibernateJpaAutoConfiguration.class })
+@SpringBootApplication(exclude = { ActiveMQAutoConfiguration.class })
 @EnableJms
-@Slf4j
+@ComponentScan(basePackages = { "com.oradnata", "com.oradnata.jms" })
+@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class,
+		DataSourceTransactionManagerAutoConfiguration.class, HibernateJpaAutoConfiguration.class,
+		ActiveMQAutoConfiguration.class, R2dbcAutoConfiguration.class,
+		JooqAutoConfiguration.class})
 public class SpringBootWeblogicApplication {
 
-	/*
-	 * @Value("${spring.ds.jndi-name}") private String jndiName;
-	 */
+	private static final Logger LOGGER = LogManager.getLogger(SpringBootWeblogicApplication.class);
 
-	/*
-	 * @Value("${spring.ds.principal}") private String userName;
-	 * 
-	 * @Value("${spring.ds.enc-cred}") private String dbCred;
-	 * 
-	 * @Value("${spring.ds.driver-class-name}") private String driverClass;
-	 * 
-	 * @Value("${spring.ds.url}") private String dbUrl;
-	 */
+	@Bean(value = "jmsConnectionFactory")
+	public ConnectionFactory getJmsConnectionFactory() {
+		ConnectionFactory connectionFactory = null;
+		try {
+			Context context = new InitialContext();			
+			String connectionFactoryName = this.getJMSConnectionDetails().getConnectionFactoryName();
+			LOGGER.info("Connection lookup;" + connectionFactoryName);
+			connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
+		} catch (NamingException e) {
+			LOGGER.error("Error while lookup", e);
+		}
+		return connectionFactory;
+	}
 
-	//private PublicUtility utility = new PublicUtility();
+	private ApplicationConnector appConnector;
+
+	private Properties prop = null;
+
+	private void loadProperties() {
+		appConnector = new ApplicationConnector();
+		if (null == prop) {
+			prop = appConnector.getAppProperties();
+		}
+	}
 
 	public static void main(String[] args) {
+		LOGGER.info("Starting the application..");
 		SpringApplication.run(SpringBootWeblogicApplication.class, args);
 	}
 
-	@Bean(name = "queueName")
-	public QueueName getQueueName() {
-		return new QueueName();
+	@Bean(name = "jmsConnectionDetails")
+	public JMSConnectionDetails getJMSConnectionDetails() {
+		return new JMSConnectionDetails();
 	}
 
 	@Bean(name = "threadPoolTaskExecutor")
@@ -61,30 +82,11 @@ public class SpringBootWeblogicApplication {
 		executor.setAwaitTerminationMillis(6000);
 		return executor;
 	}
+	
+	public String getJNDIName() {
+		loadProperties();
+		String jndiName = prop.getProperty("spring.ds.jndi-name");
+		return jndiName;
+	}
 
-	/**
-	 * Obtains the JNDI Connection for Database.
-	 * 
-	 * @return
-	 */
-	//@Bean(name="dataSource")
-	/*
-	 * public DataSource getJNDISource() { JndiTemplate jndiTemplate = new
-	 * JndiTemplate(getDBEnvironmentProperties()); try {
-	 * log.info("Trying to get the JNDI: " + jndiName.trim());
-	 * System.out.println("JNDI Lookup" + jndiName); DataSource ds = (DataSource)
-	 * jndiTemplate.getContext().lookup(jndiName.trim()); log.info(ds != null ?
-	 * "Datasource Connection successful" : "Unable to obtain the Data source.");
-	 * return ds; } catch (NamingException err) { StringWriter errors = new
-	 * StringWriter(); err.printStackTrace(new PrintWriter(errors));
-	 * log.info("[Error]" + errors.toString()); log.debug("Error while lookup",
-	 * err); err.printStackTrace(); return null; } }
-	 */
-	
-	/*
-	 * private Properties getDBEnvironmentProperties() { Properties prop = new
-	 * Properties(); // Load any properties fo JNDI connection in future. return
-	 * prop; }
-	 */
-	
 }

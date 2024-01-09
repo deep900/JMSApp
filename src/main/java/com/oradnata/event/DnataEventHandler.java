@@ -3,6 +3,8 @@
  */
 package com.oradnata.event;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,15 +16,10 @@ import org.springframework.stereotype.Component;
 
 import com.oradnata.jms.FlightInformationEvent;
 
-import lombok.extern.slf4j.Slf4j;
-
-/**
- * 
- */
 @Component
-@Slf4j
 public class DnataEventHandler implements ApplicationListener<FlightInformationEvent>, ApplicationContextAware {
 
+	private static final Logger log = LogManager.getLogger(DnataEventHandler.class);
 	private ApplicationContext applicationContext;
 
 	@Autowired

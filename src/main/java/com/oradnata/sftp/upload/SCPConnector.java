@@ -6,12 +6,12 @@ package com.oradnata.sftp.upload;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Properties;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,6 @@ import com.oradnata.config.ApplicationConnector;
 import com.oradnata.util.PublicUtility;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class connects to the SFTP Server. And allows to transfer files to
@@ -32,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Component
 @Data
-@Slf4j
 public class SCPConnector {
 
 	private String hostName = null;
@@ -54,6 +52,8 @@ public class SCPConnector {
 	ApplicationConnector connector = new ApplicationConnector();
 
 	private Properties properties = null;
+	
+	private static final Logger log = LogManager.getLogger(SCPConnector.class);
 
 	public ChannelSftp prepareSFTPConnection() throws JSchException {
 		userName = properties.getProperty("sftp.username");
@@ -62,7 +62,7 @@ public class SCPConnector {
 		knownHosts = properties.getProperty("sftp.known-hosts-file");
 		privateKeyFile = properties.getProperty("sftp.private.keyfile");
 		strictHostKeyChecking = properties.getProperty("sftp.strict-host-key-checking");
-		log.info("Preparing the SCP Connector: " + hostName + "," + userName + "," + getDecryptedPassword(password)
+		log.debug("Preparing the SCP Connector: " + hostName + "," + userName + "," + getDecryptedPassword(password)
 				+ ",known hosts:" + knownHosts + " Private key file:" + privateKeyFile + "Scrict host key check:"
 				+ strictHostKeyChecking);
 		try {
@@ -72,38 +72,36 @@ public class SCPConnector {
 				config.put("StrictHostKeyChecking", strictHostKeyChecking);
 				jsch.setConfig(config);
 			} else {
-				log.info("Strict host key checking is disabled");
+				log.debug("Strict host key checking is disabled");
 			}
 			if (null != privateKeyFile && !privateKeyFile.isBlank()) {
 				jsch.addIdentity(userName, getPvtKey(privateKeyFile), null, null);
 			} else {
-				log.info("No private key file provided for SFTP connection.");
+				log.debug("No private key file provided for SFTP connection.");
 			}
 			if (null != knownHosts && !knownHosts.isBlank()) {
 				jsch.setKnownHosts(knownHosts);
 			} else {
-				log.info("Known hosts file not set for SFTP Connection.");
+				log.debug("Known hosts file not set for SFTP Connection.");
 			}
 			jschSession = jsch.getSession(userName, hostName);
 			if (null != password && !password.isBlank()) {
 				jschSession.setPassword(getDecryptedPassword(password));
 			} else {
-				log.info("Password is not set for SFTP connection.");
+				log.debug("Password is not set for SFTP connection.");
 			}
 			jschSession.connect();
 			jschSession.setServerAliveCountMax(1);
 			jschSession.setServerAliveInterval(5000);
 			return (ChannelSftp) jschSession.openChannel("sftp");
 		} catch (Exception err) {
-			StringWriter errors = new StringWriter();
-			err.printStackTrace(new PrintWriter(errors));
-			log.info("[Error]" + errors.toString());
+			log.error("Error occured;"+ err.toString());
 			return null;
 		}
 	}
 
 	private byte[] getPvtKey(String privateKeyFile) {
-		log.info("Loading the private key file:" + privateKeyFile);
+		log.debug("Loading the private key file:" + privateKeyFile);
 		Resource res = new ClassPathResource(privateKeyFile);
 		try {
 			InputStream is = res.getInputStream();
@@ -112,10 +110,7 @@ public class SCPConnector {
 			dis.readFully(bytes);
 			return bytes;
 		} catch (IOException err) {
-			StringWriter errors = new StringWriter();
-			err.printStackTrace(new PrintWriter(errors));
-			log.info("[Error]" + errors.toString());
-			err.printStackTrace();
+			log.error("Error while loading prrivate stop");
 			return null;
 		}
 	}

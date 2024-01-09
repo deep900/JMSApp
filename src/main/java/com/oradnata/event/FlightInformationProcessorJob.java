@@ -7,22 +7,29 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
+import javax.annotation.PostConstruct;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
+import com.oradnata.config.AppDataSource;
+import com.oradnata.config.ApplicationConnector;
 import com.oradnata.data.entity.MetadataEntity;
-import com.oradnata.data.entity.MetadataEntityRepository;
-import com.oradnata.jms.JMSCountService;
 import com.oradnata.metadata.handle.DnataMetadataExtractor;
 import com.oradnata.metadata.handle.MetadataExtractor;
 import com.oradnata.sftp.upload.SFTPFileTransfer;
 
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Process the flight infomration and persists the data in a file. Store the
@@ -31,10 +38,12 @@ import lombok.extern.slf4j.Slf4j;
  * Step 1. Parse the XML content. Step 2. Create a file with the XML content.
  * Step 3. Rename the file with format. Step 4. Write the metadata in the DB.
  */
-@Slf4j
+
 @Component(value = "flightInformationProcessorJob")
 @Data
 public class FlightInformationProcessorJob implements Runnable {
+	
+	private static final Logger log = LogManager.getLogger(FlightInformationProcessorJob.class);
 
 	@Autowired
 	@Qualifier("dnataMetaDataExtractor")
@@ -44,22 +53,26 @@ public class FlightInformationProcessorJob implements Runnable {
 
 	private final String prefix = "FlightNotificationRequest";
 
-	private final String local_tmp_path = "/home/oracle/tmp/flight_info/";
+	private String local_tmp_path = null;
 
-	private final String remote_file_path = "/OIC/GFF/Request/";
+	private String remote_file_path = null;
 
 	@Autowired
 	private SFTPFileTransfer sftpFileTransfer;
 
 	private final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSZ";
 
-	private SimpleDateFormat sdf = new SimpleDateFormat(TIMESTAMP_FORMAT);
-
-	// @Autowired
-	private MetadataEntityRepository metadataEntityRepository;
-
+	private SimpleDateFormat sdf = new SimpleDateFormat(TIMESTAMP_FORMAT);	
+	
+	private List deleteFileList = new ArrayList();
+	
 	@Autowired
-	private JMSCountService jmsCountService;
+	private AppDataSource appDataSource;
+	
+	@Autowired
+	private ThreadPoolTaskExecutor threadPoolExecutor;
+	
+	private ApplicationConnector connector = new ApplicationConnector();
 
 	@Override
 	public void run() {
@@ -70,16 +83,13 @@ public class FlightInformationProcessorJob implements Runnable {
 			return;
 		}
 		String fileName = getFileName(extractedMetaData).replace(".", "").replace(" ", "-");
-		jmsCountService.getJmsInformation().put(fileName, extractedMetaData);
 		File fileObj = createFileContent(local_tmp_path + fileName + ".xml", source.toString());
 		if (null == fileObj) {
 			log.info("Unable to create the file:" + fileName);
-			jmsCountService.getJmsInformation().put(fileName + "-FileCreation", "Unable to create file");
 			return;
 		}
 		log.info("Printing the file name: " + fileName);
-		jmsCountService.getJmsInformation().put(fileName + "-FileCreation", "File Created Successfully");
-
+		
 		boolean isTransferred = sftpFile(fileObj.getAbsolutePath(), remote_file_path + fileObj.getName());
 		if (isTransferred) {
 			String seqId = extractedMetaData.get(DnataMetadataExtractor.SEQ_NUM).toString();
@@ -91,7 +101,6 @@ public class FlightInformationProcessorJob implements Runnable {
 			}
 			log.info("File transferred successfully");
 		}
-
 	}
 
 	private Map getExtractMetaData() {
@@ -131,17 +140,28 @@ public class FlightInformationProcessorJob implements Runnable {
 		boolean isTransferred = sftpFileTransfer.transferFile(localFileAbsPath, remotePath);
 		if (isTransferred) {
 			log.info("File is transferred successfully");
+			deleteFileList.add(localFileAbsPath);
+			if(deleteFileList.size() >= 10) {
+				Runnable runnable = new FolderCleaner(new ArrayList(deleteFileList));
+				threadPoolExecutor.execute(runnable);
+				deleteFileList.clear();
+			}
 		} else {
-			log.info("File transfered failed");
+			log.info("---- File transfered failed -----");
 		}
 		return isTransferred;
 	}
 
 	private Object handleMetaData(String seqId, File fileObj) {
-		if (null != fileObj) {
-			MetadataEntity entity = getEntity(fileObj.getAbsolutePath(), fileObj.getName(), seqId);
-			this.metadataEntityRepository.save(entity);
-			return entity;
+		try {
+			if (null != fileObj) {
+				MetadataEntity entity = getEntity(remote_file_path, fileObj.getName(), seqId);
+				appDataSource.saveMetadataEntity(entity);
+				log.info("Saved the entity");
+				return entity;
+			}
+		} catch (Exception err) {
+			log.error("Error in handle metadata", err);
 		}
 		return null;
 	}
@@ -157,8 +177,15 @@ public class FlightInformationProcessorJob implements Runnable {
 		entity.setSeqId(seqId);
 		entity.setFileName(fileName);
 		entity.setFilePath(filePath);
-		entity.setFlag("UNPROCESSED");
+		entity.setFlag("NEW");
 		return entity;
 	}
-
+	
+	@PostConstruct
+	private void loadProperties() {
+		Properties prop = connector.getAppProperties();
+		this.local_tmp_path = prop.getProperty("sftp.local-temp-file-path");
+		this.remote_file_path = prop.getProperty("sftp.remote-file-path");
+		log.info("Printing the local temp path and the remote path:" + local_tmp_path + "," + remote_file_path);
+	}
 }
