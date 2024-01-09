@@ -42,7 +42,7 @@ import lombok.Data;
 @Component(value = "flightInformationProcessorJob")
 @Data
 public class FlightInformationProcessorJob implements Runnable {
-	
+
 	private static final Logger log = LogManager.getLogger(FlightInformationProcessorJob.class);
 
 	@Autowired
@@ -62,16 +62,16 @@ public class FlightInformationProcessorJob implements Runnable {
 
 	private final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSZ";
 
-	private SimpleDateFormat sdf = new SimpleDateFormat(TIMESTAMP_FORMAT);	
-	
+	private SimpleDateFormat sdf = new SimpleDateFormat(TIMESTAMP_FORMAT);
+
 	private List deleteFileList = new ArrayList();
-	
+
 	@Autowired
 	private AppDataSource appDataSource;
-	
+
 	@Autowired
 	private ThreadPoolTaskExecutor threadPoolExecutor;
-	
+
 	private ApplicationConnector connector = new ApplicationConnector();
 
 	@Override
@@ -89,7 +89,7 @@ public class FlightInformationProcessorJob implements Runnable {
 			return;
 		}
 		log.info("Printing the file name: " + fileName);
-		
+
 		boolean isTransferred = sftpFile(fileObj.getAbsolutePath(), remote_file_path + fileObj.getName());
 		if (isTransferred) {
 			String seqId = extractedMetaData.get(DnataMetadataExtractor.SEQ_NUM).toString();
@@ -141,11 +141,9 @@ public class FlightInformationProcessorJob implements Runnable {
 		if (isTransferred) {
 			log.info("File is transferred successfully");
 			deleteFileList.add(localFileAbsPath);
-			if(deleteFileList.size() >= 10) {
-				Runnable runnable = new FolderCleaner(new ArrayList(deleteFileList));
-				threadPoolExecutor.execute(runnable);
-				deleteFileList.clear();
-			}
+			Runnable runnable = new FolderCleaner(new ArrayList(deleteFileList));
+			threadPoolExecutor.execute(runnable);
+			deleteFileList.clear();
 		} else {
 			log.info("---- File transfered failed -----");
 		}
@@ -180,7 +178,7 @@ public class FlightInformationProcessorJob implements Runnable {
 		entity.setFlag("NEW");
 		return entity;
 	}
-	
+
 	@PostConstruct
 	private void loadProperties() {
 		Properties prop = connector.getAppProperties();
