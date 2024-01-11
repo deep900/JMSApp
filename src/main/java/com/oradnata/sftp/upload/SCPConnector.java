@@ -62,7 +62,7 @@ public class SCPConnector {
 		knownHosts = properties.getProperty("sftp.known-hosts-file");
 		privateKeyFile = properties.getProperty("sftp.private.keyfile");
 		strictHostKeyChecking = properties.getProperty("sftp.strict-host-key-checking");
-		log.debug("Preparing the SCP Connector: " + hostName + "," + userName + "," + getDecryptedPassword(password)
+		log.info("Preparing the SCP Connector: " + hostName + "," + userName + "," + getDecryptedPassword(password)
 				+ ",known hosts:" + knownHosts + " Private key file:" + privateKeyFile + "Scrict host key check:"
 				+ strictHostKeyChecking);
 		try {
@@ -72,23 +72,23 @@ public class SCPConnector {
 				config.put("StrictHostKeyChecking", strictHostKeyChecking);
 				jsch.setConfig(config);
 			} else {
-				log.debug("Strict host key checking is disabled");
+				log.info("Strict host key checking is disabled");
 			}
 			if (null != privateKeyFile && !privateKeyFile.isBlank()) {
 				jsch.addIdentity(userName, getPvtKey(privateKeyFile), null, null);
 			} else {
-				log.debug("No private key file provided for SFTP connection.");
+				log.info("No private key file provided for SFTP connection.");
 			}
 			if (null != knownHosts && !knownHosts.isBlank()) {
 				jsch.setKnownHosts(knownHosts);
 			} else {
-				log.debug("Known hosts file not set for SFTP Connection.");
+				log.info("Known hosts file not set for SFTP Connection.");
 			}
 			jschSession = jsch.getSession(userName, hostName);
 			if (null != password && !password.isBlank()) {
 				jschSession.setPassword(getDecryptedPassword(password));
 			} else {
-				log.debug("Password is not set for SFTP connection.");
+				log.info("Password is not set for SFTP connection.");
 			}
 			jschSession.connect();
 			jschSession.setServerAliveCountMax(1);
@@ -101,7 +101,7 @@ public class SCPConnector {
 	}
 
 	private byte[] getPvtKey(String privateKeyFile) {
-		log.debug("Loading the private key file:" + privateKeyFile);
+		log.info("Loading the private key file:" + privateKeyFile);
 		Resource res = new ClassPathResource(privateKeyFile);
 		try {
 			InputStream is = res.getInputStream();

@@ -25,6 +25,9 @@ public class DnataEventHandler implements ApplicationListener<FlightInformationE
 	@Autowired
 	@Qualifier("threadPoolTaskExecutor")
 	private ThreadPoolTaskExecutor threadPoolTaskExecutor;
+	
+	@Autowired
+	private JMSCounter jmsCounter;
 
 	@Override
 	public void onApplicationEvent(FlightInformationEvent event) {
@@ -32,6 +35,7 @@ public class DnataEventHandler implements ApplicationListener<FlightInformationE
 		if (event instanceof FlightInformationEvent) {
 			threadPoolTaskExecutor.execute(getProcessorJob(event.getSource()));
 			log.info("Received a flight information event.");
+			jmsCounter.incrementParam(JMSCounter.MESSAGE_CNT);
 		}
 	}
 

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
+import com.oradnata.event.JMSCounter;
 import com.oradnata.sftp.upload.SCPConnector;
 import com.oradnata.sftp.upload.SFTPFileTransfer;
 
@@ -26,6 +27,9 @@ public class HealthController {
 
 	@Autowired
 	private SFTPFileTransfer sftpTransfer;
+
+	@Autowired
+	private JMSCounter jmsCounter;
 
 	@GetMapping("health")
 	public String getTest() {
@@ -66,6 +70,29 @@ public class HealthController {
 		} catch (JSchException err) {
 			log.info("Error while creating the SFTP Connection", err);
 			return err.getMessage();
+		}
+	}
+
+	@GetMapping("getJMSStatus")
+	public String getJMSStatus() {
+		try {
+			log.info("get JMS Status");
+			return jmsCounter.getJMSData().toString();
+		} catch (Exception err) {
+			log.error("Error JMS status API Call", err);
+			return "Error in getting the status";
+		}
+	}
+	
+	@GetMapping("resetJMSStatus")
+	public String resetJMSStatus() {
+		try {
+			log.info("Reset JMS Status");
+			jmsCounter.resetMap();
+			return jmsCounter.getJMSData().toString();
+		} catch (Exception err) {
+			log.error("Error JMS status API Call", err);
+			return "Error in getting the status";
 		}
 	}
 }

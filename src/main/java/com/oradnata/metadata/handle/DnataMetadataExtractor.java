@@ -26,7 +26,7 @@ public class DnataMetadataExtractor implements MetadataExtractor {
 		try {
 			IATA_AIDX_FlightLegNotifRQ flightInfo = xmlMapper.readValue(fileObj.toString(),
 					IATA_AIDX_FlightLegNotifRQ.class);
-			log.debug(flightInfo.toString());
+			log.info(flightInfo.toString());
 			return getMetadataInMap(flightInfo);
 		} catch (IOException err) {
 			log.error("Error while deserializing the XML file; " + fileObj.toString(), err);
@@ -35,7 +35,7 @@ public class DnataMetadataExtractor implements MetadataExtractor {
 	}
 
 	private Map<String, Object> getMetadataInMap(IATA_AIDX_FlightLegNotifRQ flightInfo) {
-		log.debug("Reading the metadata from flight info:" + flightInfo.toString());
+		log.info("Reading the metadata from flight info:" + flightInfo.toString());
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		map.put(SEQ_NUM, flightInfo.getSequenceNmbr());
 		map.put(TIMESTAMP, flightInfo.getTimeStamp());

@@ -28,14 +28,14 @@ public class JMSConnectionDetails {
 	public String getQueue() {
 		loadProperties();
 		queueName = properties.getProperty("spring.jms.listener.queueName");
-		log.debug("Printing the queue name:" + queueName);
+		log.info("Printing the queue name:" + queueName);
 		return queueName;
 	}
 
 	public String getConnectionFactoryName() {
 		loadProperties();
 		connectionFactoryName = properties.getProperty("spring.jms.jndi-name");
-		log.debug("Printing the Connection factory name:" +  connectionFactoryName);
+		log.info("Printing the Connection factory name:" +  connectionFactoryName);
 		return connectionFactoryName;
 	}
 	

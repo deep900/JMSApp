@@ -9,6 +9,7 @@ import javax.naming.NamingException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,9 +21,13 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
 import org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Scope;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
+import com.oradnata.event.DuplicateMessageHandler;
+import com.oradnata.event.FlightInformationProcessorJob;
 import com.oradnata.jms.JMSConnectionDetails;
 
 @SpringBootApplication(exclude = { ActiveMQAutoConfiguration.class })
@@ -30,8 +35,7 @@ import com.oradnata.jms.JMSConnectionDetails;
 @ComponentScan(basePackages = { "com.oradnata", "com.oradnata.jms" })
 @EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class,
 		DataSourceTransactionManagerAutoConfiguration.class, HibernateJpaAutoConfiguration.class,
-		ActiveMQAutoConfiguration.class, R2dbcAutoConfiguration.class,
-		JooqAutoConfiguration.class})
+		ActiveMQAutoConfiguration.class, R2dbcAutoConfiguration.class, JooqAutoConfiguration.class })
 public class SpringBootWeblogicApplication {
 
 	private static final Logger LOGGER = LogManager.getLogger(SpringBootWeblogicApplication.class);
@@ -40,7 +44,7 @@ public class SpringBootWeblogicApplication {
 	public ConnectionFactory getJmsConnectionFactory() {
 		ConnectionFactory connectionFactory = null;
 		try {
-			Context context = new InitialContext();			
+			Context context = new InitialContext();
 			String connectionFactoryName = this.getJMSConnectionDetails().getConnectionFactoryName();
 			LOGGER.info("Connection lookup;" + connectionFactoryName);
 			connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
@@ -82,11 +86,24 @@ public class SpringBootWeblogicApplication {
 		executor.setAwaitTerminationMillis(6000);
 		return executor;
 	}
-	
+
 	public String getJNDIName() {
 		loadProperties();
 		String jndiName = prop.getProperty("spring.ds.jndi-name");
 		return jndiName;
 	}
 
+	@Bean(value = "flightInformationProcessorJob")
+	@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+	public FlightInformationProcessorJob getFlightInformationProcessorJob() {
+		return new FlightInformationProcessorJob();
+	}
+
+	@Bean
+	public ThreadPoolTaskScheduler getScheduler() {
+		ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+		scheduler.setPoolSize(5);
+		scheduler.setWaitForTasksToCompleteOnShutdown(false);
+		return scheduler;
+	}
 }

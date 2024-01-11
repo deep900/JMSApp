@@ -27,7 +27,7 @@ public class SFTPFileTransfer {
 	public synchronized boolean transferFile(String localFile, String remoteFile) {
 		try {
 			if (connector.getJschSession() == null || channelSftp == null) {
-				log.debug("Opening a SSH connection to transfer the file.");
+				log.info("Opening a SSH connection to transfer the file.");
 				try {
 					channelSftp = connector.prepareSFTPConnection();
 					channelSftp.connect();
@@ -40,7 +40,7 @@ public class SFTPFileTransfer {
 					channelSftp.connect();
 				}
 			}
-			log.debug("Trying to transfer the file:" + localFile);
+			log.info("Trying to transfer the file:" + localFile);
 			channelSftp.put(localFile, remoteFile);
 			return true;
 		} catch (Exception err) {

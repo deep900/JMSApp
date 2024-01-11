@@ -21,15 +21,15 @@
 		</RollingFile>
 	</Appenders>
 	<Loggers>
-		<Logger name="console" level="trace" additivity="false">
+		<Logger name="console" level="debug" additivity="false">
 			<AppenderRef ref="ConsoleAppender" />
 			<AppenderRef ref="FileAppender" />
 		</Logger>
 
-		<Root level="trace">
+		<Root level="debug">
 			<AppenderRef ref="ConsoleAppender" />
 			<AppenderRef ref="FileAppender" />
 		</Root>
-		<Logger name="org.springframework" level="trace"/>
+		<Logger name="org.springframework" level="debug"/>
 	</Loggers>
 </Configuration>
