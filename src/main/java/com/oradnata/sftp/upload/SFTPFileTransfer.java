@@ -20,7 +20,7 @@ public class SFTPFileTransfer {
 	private static final Logger log = LogManager.getLogger(SFTPFileTransfer.class);
 
 	@Autowired
-	private SCPConnector connector = new SCPConnector();
+	private SCPConnector connector;
 
 	private ChannelSftp channelSftp;
 	

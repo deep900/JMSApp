@@ -4,30 +4,15 @@
 package com.oradnata.event;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-
-import javax.annotation.PostConstruct;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 
-import com.oradnata.config.AppDataSource;
-import com.oradnata.config.ApplicationConnector;
-import com.oradnata.data.entity.MetadataEntity;
-import com.oradnata.metadata.handle.DnataMetadataExtractor;
-import com.oradnata.metadata.handle.MetadataExtractor;
-import com.oradnata.sftp.upload.SFTPFileTransfer;
+import com.oradnata.metadata.handle.IATA_AIDX_FlightLegNotifRQ;
 
 import lombok.Data;
 
@@ -39,163 +24,78 @@ import lombok.Data;
  * Step 3. Rename the file with format. Step 4. Write the metadata in the DB.
  */
 @Data
-public class FlightInformationProcessorJob extends FileContentCreator implements Runnable {
+public class FlightInformationProcessorJob extends AbstractFIProcessorJob implements ApplicationContextAware {
 
 	private static final Logger log = LogManager.getLogger(FlightInformationProcessorJob.class);
 
 	public FlightInformationProcessorJob() {
-		this.jobId = getJobNumber();
-	}
+		super.setJobId(getJobNumber());
+	}	
 
-	@Autowired
-	@Qualifier("dnataMetaDataExtractor")
-	private MetadataExtractor dnataMetaDataExtractor;
-
-	private Object source;
-
-	private final String prefix = "FlightNotificationRequest";
-
-	private String local_tmp_path = null;
-
-	private String remote_file_path = null;
-
-	@Autowired
-	private JMSCounter jmsCounter;
-
-	@Autowired
-	private SFTPFileTransfer sftpFileTransfer;
-
-	private final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSZ";
-
-	private SimpleDateFormat sdf = new SimpleDateFormat(TIMESTAMP_FORMAT);
-
-	private List deleteFileList = new ArrayList();
-
-	@Autowired
-	private AppDataSource appDataSource;
-
-	@Autowired
-	private ThreadPoolTaskExecutor threadPoolExecutor;
-
-	private ApplicationConnector connector = new ApplicationConnector();
-
-	private String jobId;
-
-	private Random random = new Random();
-	
 	@Autowired
 	private FolderCleaner folderCleaner;
 
+	private ApplicationContext context;
+
 	@Override
 	public void run() {
-		log.info("Processing the JMS message: Job:" + jobId);
-		Map extractedMetaData = getExtractMetaData();
+		log.info("Processing the JMS message: Job:" + getJobId());
+		IATA_AIDX_FlightLegNotifRQ extractedMetaData = getExtractMetaData();
 		if (null == extractedMetaData) {
-			log.error("Unable to process this metadata " + source.toString());
-			jmsCounter.incrementParam(JMSCounter.UNABLE_TO_PARSE_FILE);
+			log.error("Unable to process this metadata " + getSource().toString());
+			getJmsCounter().incrementParam(JMSCounter.UNABLE_TO_PARSE_FILE);
 			return;
 		}
 		String fileName = getFileName(extractedMetaData).replace(".", "").replace(" ", "-");
-		File fileObj = createFileContent(local_tmp_path + fileName + ".xml", source.toString());
+		File fileObj = getFileContentCreator().createFileContent(getLocalTmpPath() + fileName + ".xml",
+				getSource().toString());
 		if (null == fileObj) {
 			log.info("Unable to create the file:" + fileName);
-			jmsCounter.incrementParam(JMSCounter.UNABLE_TO_CREATE_FILE);
-			handleDuplicateMessage(source,  extractedMetaData.get(DnataMetadataExtractor.SEQ_NUM).toString());
+			getJmsCounter().incrementParam(JMSCounter.UNABLE_TO_CREATE_FILE);
+			handleDuplicateMessage(getSource(), extractedMetaData);
 			return;
 		}
 		log.info("Printing the file name: " + fileName);
-
-		boolean isTransferred = sftpFile(fileObj.getAbsolutePath(), remote_file_path + fileObj.getName());
+		boolean isTransferred = sftpFile(fileObj.getAbsolutePath(), getRemoteFilePath() + fileObj.getName());
 		if (isTransferred) {
-			String seqId = extractedMetaData.get(DnataMetadataExtractor.SEQ_NUM).toString();
-			Object entity = handleMetaData(seqId, fileObj);
+			Object entity = handleMetaData(extractedMetaData.getSequenceNmbr(), fileObj,getAttribute2(extractedMetaData));
 			if (null != entity) {
 				log.info("Persisted the entity :" + entity.toString());
-				jmsCounter.incrementParam(JMSCounter.PROCESSED_SUCCESSFULLY);
+				getJmsCounter().incrementParam(JMSCounter.PROCESSED_SUCCESSFULLY);
 			} else {
 				log.error("Unable to persist the entity with file name:" + fileName);
-				jmsCounter.incrementParam(JMSCounter.UNABLE_TO_UPDATE_IN_DB);
+				getJmsCounter().incrementParam(JMSCounter.UNABLE_TO_UPDATE_IN_DB);
 			}
 			log.info("File transferred successfully");
 			folderCleaner.addFileForCleanup(fileObj.getAbsolutePath());
 		} else {
 			log.error("File transfer failed");
-			jmsCounter.incrementParam(JMSCounter.UNABLE_TO_UPLOAD_FILE);
+			getJmsCounter().incrementParam(JMSCounter.UNABLE_TO_UPLOAD_FILE);
 		}
-		log.info("Completed job" + jobId);		
+		log.info("Completed - " + getJobId());
 	}
 
-	private Map getExtractMetaData() {
-		return dnataMetaDataExtractor.extractMetadata(source);
+	private IATA_AIDX_FlightLegNotifRQ getExtractMetaData() {
+		return (IATA_AIDX_FlightLegNotifRQ) getDnataMetaDataExtractor().extractMetadata(getSource());
 	}
 
-	private String getFileName(Map extractedMetaData) {
-		String seqNumber = extractedMetaData.get(DnataMetadataExtractor.SEQ_NUM).toString();
-		String timeStamp = extractedMetaData.get(DnataMetadataExtractor.TIMESTAMP).toString();
-		return prefix + "_" + seqNumber + "_" + timeStamp;
+	private String getFileName(IATA_AIDX_FlightLegNotifRQ extractedMetaData) {
+		int seqNumber = extractedMetaData.getSequenceNmbr();
+		String timeStamp = getCurrentTimeStamp();
+		return FileContentCreator.prefix + "_" + seqNumber + "_" + timeStamp;
 	}
 
-	private boolean sftpFile(String localFileAbsPath, String remotePath) {
-		log.info("Transfering the file: " + localFileAbsPath + " to " + remotePath);
-		boolean isTransferred = sftpFileTransfer.transferFile(localFileAbsPath, remotePath);
-		if (isTransferred) {
-			log.info("File is transferred successfully");		
-		} else {
-			log.info("---- File transfered failed -----");
-		}
-		return isTransferred;
-	}
-
-	private Object handleMetaData(String seqId, File fileObj) {
-		try {
-			if (null != fileObj) {
-				MetadataEntity entity = getEntity(remote_file_path, fileObj.getName(), seqId);
-				appDataSource.saveMetadataEntity(entity);
-				log.info("Saved the entity");
-				return entity;
-			}
-		} catch (Exception err) {
-			log.error("Error in handle metadata", err);
-		}
-		return null;
-	}
-
-	private String getCurrentTimeStamp() {
-		Date now = new Date();
-		return sdf.format(now);
-	}
-
-	private MetadataEntity getEntity(String filePath, String fileName, String seqId) {
-		MetadataEntity entity = new MetadataEntity();
-		entity.setCreatedDate(getCurrentTimeStamp());
-		entity.setSeqId(seqId);
-		entity.setFileName(fileName);
-		entity.setFilePath(filePath);
-		entity.setFlag("NEW");
-		return entity;
-	}
-
-	@PostConstruct
-	private void loadProperties() {
-		Properties prop = connector.getAppProperties();
-		this.local_tmp_path = prop.getProperty("sftp.local-temp-file-path");
-		this.remote_file_path = prop.getProperty("sftp.remote-file-path");
-		log.info("Printing the local temp path and the remote path:" + local_tmp_path + "," + remote_file_path);
-	}
-
-	private String getJobNumber() {
-		return "Job-" + random.nextInt(10000) + "-" + random.nextInt(10000);
-	}
-	
-	private void handleDuplicateMessage(Object source, String sequenceNumber) {
-		DuplicateMessageHandler duplicateHandler = new DuplicateMessageHandler();
-		if(null == sequenceNumber) {
-			sequenceNumber = "NA";
-		}
-		duplicateHandler.setSeqNumber(sequenceNumber);
+	private void handleDuplicateMessage(Object source, IATA_AIDX_FlightLegNotifRQ extractedMetadata) {
+		DuplicateMessageHandler duplicateHandler = (DuplicateMessageHandler) this.context
+				.getBean("duplicateMessageHandler");
 		duplicateHandler.setSource(source);
-		duplicateHandler.setAppConnector(connector);
-		duplicateHandler.setJobId(this.jobId);
-		this.threadPoolExecutor.execute(duplicateHandler);
+		duplicateHandler.setExtractedMetaData(extractedMetadata);		
+		duplicateHandler.setJobId("Duplicate " + getJobId());
+		getThreadPoolExecutor().execute(duplicateHandler);
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.context = applicationContext;
 	}
 }

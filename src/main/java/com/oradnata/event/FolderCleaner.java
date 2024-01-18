@@ -31,16 +31,18 @@ public class FolderCleaner implements Runnable ,InitializingBean{
 	@Override
 	public void run() {
 		try {
-			if (null != filesToClean && !filesToClean.isEmpty()) {
+			List<String> cleanFilesList = new ArrayList();
+			cleanFilesList.addAll(filesToClean);
+			filesToClean.clear();
+			if (!cleanFilesList.isEmpty()) {
 				Thread.currentThread().sleep(6000);
-				filesToClean.forEach(file -> {
+				cleanFilesList.forEach(file -> {
 					File obj = new File(file);
 					if (obj.exists()) {
 						obj.delete();
 					}
 				});
-				log.info(filesToClean.size() + " files cleaned successfully");
-				filesToClean.clear();
+				log.info(cleanFilesList.size() + " files cleaned successfully");
 			} else {
 				log.info("No files to clean");
 			}
@@ -49,12 +51,12 @@ public class FolderCleaner implements Runnable ,InitializingBean{
 		}
 	}
 	
-	public void addFileForCleanup(String filePath) {
+	public void  addFileForCleanup(String filePath) {
 		filesToClean.add(filePath);
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		scheduler.scheduleAtFixedRate(this, Duration.ofHours(12));		
-	}
+	}	
 }

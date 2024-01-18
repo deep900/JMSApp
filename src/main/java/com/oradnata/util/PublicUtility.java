@@ -111,5 +111,6 @@ public class PublicUtility  {
 		public static void main(String args[]) {
 			PublicUtility utility  = new PublicUtility();
 			String enc = utility.EncryptText("Hello World");			
+			System.out.println(enc);
 		}
 }

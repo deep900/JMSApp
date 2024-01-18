@@ -2,16 +2,10 @@ package com.oradnata.jms;
 
 import java.util.Properties;
 
-import javax.annotation.PostConstruct;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.oradnata.config.ApplicationConnector;
-
-/**
- * 
- */
 
 public class JMSConnectionDetails {
 
@@ -35,10 +29,10 @@ public class JMSConnectionDetails {
 	public String getConnectionFactoryName() {
 		loadProperties();
 		connectionFactoryName = properties.getProperty("spring.jms.jndi-name");
-		log.info("Printing the Connection factory name:" +  connectionFactoryName);
+		log.info("Printing the Connection factory name:" + connectionFactoryName);
 		return connectionFactoryName;
 	}
-	
+
 	private void loadProperties() {
 		properties = connector.getAppProperties();
 	}

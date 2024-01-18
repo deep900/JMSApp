@@ -3,8 +3,6 @@
  */
 package com.oradnata.config;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -22,9 +20,6 @@ import org.springframework.stereotype.Component;
 import com.oradnata.data.entity.MetadataEntity;
 import com.oradnata.util.PublicUtility;
 
-/**
- * 
- */
 @Component(value = "appDataSource")
 public class AppDataSource {
 
@@ -92,17 +87,18 @@ public class AppDataSource {
 	public Object saveMetadataEntity(MetadataEntity obj) {
 		log.info("About to save the entity;" + obj.toString());
 		Connection connection = null;
-		String SQL = "INSERT INTO GFF_NOTIFICATIONMSG_TRACK (SEQ_ID,FILE_PATH,FILE_NAME,CREATED_DATE,UPDATED_DATE,FLAG) VALUES (?,?,?,?,?,?)";
+		String SQL = "INSERT INTO GFF_NOTIFICATIONMSG_TRACK (SEQ_ID,FILE_PATH,FILE_NAME,CREATED_DATE,UPDATED_DATE,FLAG,ATTRIBUTE2) VALUES (?,?,?,?,?,?,?)";
 		DataSource ds = getDataSource();
 		try {
 			connection = ds.getConnection();
 			PreparedStatement pstmt = connection.prepareStatement(SQL);
-			pstmt.setString(1, obj.getSeqId());
+			pstmt.setInt(1, obj.getSeqId());
 			pstmt.setString(2, obj.getFilePath());
 			pstmt.setString(3, obj.getFileName());
-			pstmt.setString(4, obj.getCreatedDate());
-			pstmt.setString(5, obj.getUpdatedDate());
+			pstmt.setTimestamp(4, obj.getCreatedDate());
+			pstmt.setTimestamp(5, obj.getUpdatedDate());
 			pstmt.setString(6, obj.getFlag());
+			pstmt.setString(7, obj.getAttribute2());
 			pstmt.executeUpdate();
 			pstmt.close();
 			log.info("Saved the entity in table.");

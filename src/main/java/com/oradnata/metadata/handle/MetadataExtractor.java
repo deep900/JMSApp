@@ -3,8 +3,8 @@
  */
 package com.oradnata.metadata.handle;
 
-import java.util.Map;
-
-public interface MetadataExtractor {
-	public Map<String,Object> extractMetadata(Object fileObj);
+public interface MetadataExtractor <T>{
+	//public Map<String,Object> extractMetadata(Object fileObj);
+	
+	public T extractMetadata(Object fileObj);
 }

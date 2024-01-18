@@ -4,6 +4,7 @@
 package com.oradnata.data.entity;
 
 import java.sql.Clob;
+import java.sql.Timestamp;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -28,7 +29,7 @@ public class MetadataEntity {
 	
 	  @Id	  
 	  @Column(name = "SEQ_ID")	 
-	private String seqId;
+	private Integer seqId;
 
 	@Column(name = "FILE_PATH")
 	private String filePath;
@@ -37,10 +38,10 @@ public class MetadataEntity {
 	private String fileName;
 
 	@Column(name = "CREATED_DATE")
-	private String createdDate;
+	private Timestamp createdDate;
 
 	@Column(name = "UPDATED_DATE")
-	private String updatedDate;
+	private Timestamp updatedDate;
 
 	@Column(name = "FLAG")
 	private String flag;

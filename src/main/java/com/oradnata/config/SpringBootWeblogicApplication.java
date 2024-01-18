@@ -65,8 +65,7 @@ public class SpringBootWeblogicApplication {
 		}
 	}
 
-	public static void main(String[] args) {
-		LOGGER.info("Starting the application..");
+	public static void main(String[] args) {		
 		SpringApplication.run(SpringBootWeblogicApplication.class, args);
 	}
 
@@ -78,9 +77,9 @@ public class SpringBootWeblogicApplication {
 	@Bean(name = "threadPoolTaskExecutor")
 	public ThreadPoolTaskExecutor getThreadPoolTaskExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setMaxPoolSize(15);
+		executor.setMaxPoolSize(25);
 		executor.setCorePoolSize(6);
-		executor.setQueueCapacity(30000);
+		executor.setQueueCapacity(35000);
 		executor.setBeanName("Dnata-Flight-Info-Processor");
 		executor.setThreadNamePrefix("Dnata-Flight-Info");
 		executor.setAwaitTerminationMillis(6000);
@@ -97,6 +96,12 @@ public class SpringBootWeblogicApplication {
 	@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 	public FlightInformationProcessorJob getFlightInformationProcessorJob() {
 		return new FlightInformationProcessorJob();
+	}
+	
+	@Bean(value = "duplicateMessageHandler")
+	@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+	public DuplicateMessageHandler getDuplicateHandler() {
+		return new DuplicateMessageHandler();
 	}
 
 	@Bean
