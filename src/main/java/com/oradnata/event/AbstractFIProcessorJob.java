@@ -189,7 +189,7 @@ public abstract class AbstractFIProcessorJob implements Runnable {
 		String localTmpPath = prop.getProperty("sftp.local-temp-file-path");
 		setLocalTmpPath(localTmpPath);
 		String remoteFilePath = prop.getProperty("sftp.remote-file-path");
-		setRemoteFilePath(remoteFilePath);
+		setRemoteFilePath(remoteFilePath);		
 		log.info("Printing the local temp path and the remote path:" + localTmpPath + "," + remoteFilePath);
 	}
 

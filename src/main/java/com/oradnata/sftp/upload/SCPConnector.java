@@ -47,21 +47,25 @@ public class SCPConnector {
 
 	private String strictHostKeyChecking = null;
 
-	PublicUtility publicUtility = new PublicUtility();
+	private PublicUtility publicUtility = new PublicUtility();
 
-	ApplicationConnector connector = new ApplicationConnector();
+	private ApplicationConnector connector = new ApplicationConnector();
 
 	private Properties properties = null;
-	
+
 	private static final Logger log = LogManager.getLogger(SCPConnector.class);
 
-	public ChannelSftp prepareSFTPConnection() throws JSchException {
+	private void loadAllSFTPProperties() {
 		userName = properties.getProperty("sftp.username");
 		password = properties.getProperty("sftp.enc-credentials");
 		hostName = properties.getProperty("sftp.host");
 		knownHosts = properties.getProperty("sftp.known-hosts-file");
 		privateKeyFile = properties.getProperty("sftp.private.keyfile");
 		strictHostKeyChecking = properties.getProperty("sftp.strict-host-key-checking");
+	}
+
+	public ChannelSftp prepareSFTPConnection() throws JSchException {
+		loadAllSFTPProperties();
 		log.info("Preparing the SCP Connector: " + hostName + "," + userName + "," + getDecryptedPassword(password)
 				+ ",known hosts:" + knownHosts + " Private key file:" + privateKeyFile + "Scrict host key check:"
 				+ strictHostKeyChecking);
@@ -95,7 +99,7 @@ public class SCPConnector {
 			jschSession.setServerAliveInterval(5000);
 			return (ChannelSftp) jschSession.openChannel("sftp");
 		} catch (Exception err) {
-			log.error("Error occured;"+ err.toString());
+			log.error("Error occured;" + err.toString());
 			return null;
 		}
 	}
@@ -113,7 +117,7 @@ public class SCPConnector {
 			log.error("Error while loading prrivate stop");
 			return null;
 		}
-	}
+	}	
 
 	@PostConstruct
 	public void loadProp() {

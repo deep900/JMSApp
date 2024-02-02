@@ -1,6 +1,7 @@
 package com.oradnata.config;
 
 import java.util.Properties;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import javax.jms.ConnectionFactory;
 import javax.naming.Context;
@@ -28,6 +29,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import com.oradnata.event.DuplicateMessageHandler;
 import com.oradnata.event.FlightInformationProcessorJob;
+import com.oradnata.event.Retryable;
+import com.oradnata.event.RetryableQueueProcessor;
 import com.oradnata.jms.JMSConnectionDetails;
 
 @SpringBootApplication(exclude = { ActiveMQAutoConfiguration.class })
@@ -65,7 +68,7 @@ public class SpringBootWeblogicApplication {
 		}
 	}
 
-	public static void main(String[] args) {		
+	public static void main(String[] args) {
 		SpringApplication.run(SpringBootWeblogicApplication.class, args);
 	}
 
@@ -97,7 +100,7 @@ public class SpringBootWeblogicApplication {
 	public FlightInformationProcessorJob getFlightInformationProcessorJob() {
 		return new FlightInformationProcessorJob();
 	}
-	
+
 	@Bean(value = "duplicateMessageHandler")
 	@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 	public DuplicateMessageHandler getDuplicateHandler() {
@@ -110,5 +113,17 @@ public class SpringBootWeblogicApplication {
 		scheduler.setPoolSize(5);
 		scheduler.setWaitForTasksToCompleteOnShutdown(false);
 		return scheduler;
+	}
+
+	@Bean(value = "retryBlockingQueue")
+	@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
+	public PriorityBlockingQueue<Retryable> getRetryQueue() {
+		return new PriorityBlockingQueue<Retryable>();
+	}
+	
+	@Bean
+	@Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
+	public RetryableQueueProcessor getRetryQueueProcessor() {
+		return new RetryableQueueProcessor();
 	}
 }

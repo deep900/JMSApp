@@ -12,18 +12,18 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;
 
 /**
- *  This class provides the functionality to transfer the file into SFTP Server.
+ * This class provides the functionality to transfer the file into SFTP Server.
  */
 @Component
 public class SFTPFileTransfer {
-	
+
 	private static final Logger log = LogManager.getLogger(SFTPFileTransfer.class);
 
 	@Autowired
 	private SCPConnector connector;
 
-	private ChannelSftp channelSftp;
-	
+	private ChannelSftp channelSftp;	
+
 	public synchronized boolean transferFile(String localFile, String remoteFile) {
 		try {
 			if (connector.getJschSession() == null || channelSftp == null) {
@@ -36,7 +36,7 @@ public class SFTPFileTransfer {
 					return false;
 				}
 			} else {
-				if (channelSftp.isClosed()) {
+				if (channelSftp.isClosed() || !channelSftp.isConnected()) {
 					channelSftp.connect();
 				}
 			}
@@ -44,8 +44,8 @@ public class SFTPFileTransfer {
 			channelSftp.put(localFile, remoteFile);
 			return true;
 		} catch (Exception err) {
-			log.error("Error while sending the file to the remote server", err);			
+			log.error("Error while sending the file to the remote server", err);
 			return false;
 		}
-	}	
+	}
 }

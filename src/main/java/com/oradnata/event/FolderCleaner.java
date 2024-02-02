@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
+import com.oradnata.config.ApplicationConnector;
+
 /**
  * This thread is used to clean the files in the temp directory.
  */
@@ -24,6 +26,8 @@ public class FolderCleaner implements Runnable ,InitializingBean{
 	private static final Logger log = LogManager.getLogger(FolderCleaner.class);
 
 	private List<String> filesToClean = new ArrayList<String>();
+	
+	ApplicationConnector connector = new ApplicationConnector();
 	
 	@Autowired
 	private ThreadPoolTaskScheduler scheduler;	
@@ -57,6 +61,12 @@ public class FolderCleaner implements Runnable ,InitializingBean{
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		scheduler.scheduleAtFixedRate(this, Duration.ofHours(12));		
-	}	
+		String frequency = getFileCleanerFrequency();
+		log.info("Folder cleaner frequency in minutes:" + frequency);
+		scheduler.scheduleAtFixedRate(this, Duration.ofMinutes(Integer.parseInt(frequency)));		
+	}
+	
+	private String getFileCleanerFrequency() {
+		return this.connector.getAppProperties().get("folder.cleaner.frequency.in.minutes").toString();
+	}
 }
