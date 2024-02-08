@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jndi.JndiTemplate;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,7 @@ public class AppDataSource {
 
 	private static final Logger log = LogManager.getLogger(AppDataSource.class);
 
+	@Autowired
 	private ApplicationConnector appConnector;
 
 	private Properties prop = null;
@@ -35,8 +37,7 @@ public class AppDataSource {
 
 	private DataSource ds = null;
 
-	private void loadProperties() {
-		appConnector = new ApplicationConnector();
+	private void loadProperties() {		
 		if (null == prop) {
 			prop = appConnector.getAppProperties();
 		}

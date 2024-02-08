@@ -25,7 +25,8 @@ public class RetryableQueueProcessor implements Runnable {
 	@Qualifier(value = "retryBlockingQueue")
 	private PriorityBlockingQueue<Retryable> priorityQueue;
 
-	private ApplicationConnector applicationConnector = new ApplicationConnector();
+	@Autowired
+	private ApplicationConnector applicationConnector;
 
 	@Autowired
 	private ThreadPoolTaskScheduler scheduler;
@@ -43,7 +44,7 @@ public class RetryableQueueProcessor implements Runnable {
 		} else {
 			log.error("unable to add the element in the queue");
 		}
-		log.debug("Printing the queue size: " + priorityQueue.size());
+		log.info("Printing the queue size: " + priorityQueue.size());
 	}
 
 	public void removeJob(Retryable obj) {
@@ -51,7 +52,7 @@ public class RetryableQueueProcessor implements Runnable {
 		if (priorityQueue.remove(obj)) {
 			jmsCounter.decrementParam(JMSCounter.NO_OF_JOBS_FOR_RETRY);
 		}
-		log.debug("Printing the queue size: " + priorityQueue.size());
+		log.info("Printing the queue size: " + priorityQueue.size());
 	}
 
 	private Retryable getRetryable() {
@@ -59,7 +60,7 @@ public class RetryableQueueProcessor implements Runnable {
 		Retryable obj = priorityQueue.poll();
 		if (null != obj) {
 			jmsCounter.decrementParam(JMSCounter.NO_OF_JOBS_FOR_RETRY);
-			log.debug("Found the retry job " + obj.getJobDetails());
+			log.info("Found the retry job " + obj.getJobDetails());
 		}
 		return obj;
 	}
@@ -100,8 +101,8 @@ public class RetryableQueueProcessor implements Runnable {
 		Retryable retryable = null;
 		while ((retryable = getRetryable()) != null) {
 			log.info("Processing the retryable job " + retryable.getJobDetails());
-			log.debug("Max retry count" + retryable.getMaxRetyCount());
-			log.debug("Retry count" + retryable.getRetryCount());
+			log.info("Max retry count" + retryable.getMaxRetyCount());
+			log.info("Retry count" + retryable.getRetryCount());
 			if ( retryable.getRetryCount() >= retryable.getMaxRetyCount()) {
 				log.error("Unable to proceed the job : " + retryable.getJobDetails());
 				removeJob(retryable);

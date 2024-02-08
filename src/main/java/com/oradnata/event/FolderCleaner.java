@@ -27,7 +27,8 @@ public class FolderCleaner implements Runnable ,InitializingBean{
 
 	private List<String> filesToClean = new ArrayList<String>();
 	
-	ApplicationConnector connector = new ApplicationConnector();
+	@Autowired
+	private ApplicationConnector connector;
 	
 	@Autowired
 	private ThreadPoolTaskScheduler scheduler;	

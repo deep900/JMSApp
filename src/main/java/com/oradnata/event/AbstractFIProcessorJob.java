@@ -48,7 +48,8 @@ public abstract class AbstractFIProcessorJob implements Runnable {
 
 	private SimpleDateFormat sdf = new SimpleDateFormat(TIMESTAMP_FORMAT);
 
-	private ApplicationConnector connector = new ApplicationConnector();
+	@Autowired
+	private ApplicationConnector connector;
 
 	private String jobId;
 

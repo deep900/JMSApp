@@ -4,6 +4,7 @@ import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.oradnata.config.ApplicationConnector;
 
@@ -17,7 +18,8 @@ public class JMSConnectionDetails {
 
 	private Properties properties = null;
 
-	private ApplicationConnector connector = new ApplicationConnector();
+	@Autowired
+	private ApplicationConnector connector;
 
 	public String getQueue() {
 		loadProperties();

@@ -126,4 +126,9 @@ public class SpringBootWeblogicApplication {
 	public RetryableQueueProcessor getRetryQueueProcessor() {
 		return new RetryableQueueProcessor();
 	}
+	
+	@Bean
+	public ApplicationConnector getApplicationConnector() {
+		return new ApplicationConnector();
+	}
 }

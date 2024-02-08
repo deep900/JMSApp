@@ -17,7 +17,7 @@
 			<Policies>
 				<SizeBasedTriggeringPolicy size="10MB" />
 			</Policies>
-			<DefaultRolloverStrategy max="10" />
+			<DefaultRolloverStrategy max="100" />
 		</RollingFile>
 	</Appenders>
 	<Loggers>
@@ -31,5 +31,6 @@
 			<AppenderRef ref="FileAppender" />
 		</Root>
 		<Logger name="org.springframework" level="debug"/>
+		<Logger name="org.springframework.transaction.jta" level="info"/>
 	</Loggers>
 </Configuration>

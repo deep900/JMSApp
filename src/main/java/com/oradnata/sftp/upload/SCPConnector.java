@@ -12,6 +12,7 @@ import javax.annotation.PostConstruct;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -49,7 +50,8 @@ public class SCPConnector {
 
 	private PublicUtility publicUtility = new PublicUtility();
 
-	private ApplicationConnector connector = new ApplicationConnector();
+	@Autowired
+	private ApplicationConnector connector;
 
 	private Properties properties = null;
 
