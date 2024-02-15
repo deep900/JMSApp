@@ -64,7 +64,8 @@ public class FlightInformationProcessorJob extends AbstractFIProcessorJob
 			getJmsCounter().incrementParam(JMSCounter.UNABLE_TO_PARSE_FILE);
 			return;
 		}
-		fileName = getFileName(extractedMetaData).replace(".", "").replace(" ", "-");
+		String attribute2 = getAttribute2(extractedMetaData);
+		fileName = getFileName(extractedMetaData,attribute2);
 		fileObj = getFileContentCreator().createFileContent(getLocalTmpPath() + fileName + ".xml",
 				getSource().toString());
 		if (null == fileObj) {
@@ -77,7 +78,7 @@ public class FlightInformationProcessorJob extends AbstractFIProcessorJob
 		boolean isTransferred = uploadFileInSftpServer(fileObj);
 		if (isTransferred) {
 			Object entity = updateInDatabase(extractedMetaData.getSequenceNmbr(), fileObj,
-					getAttribute2(extractedMetaData));
+					attribute2);
 			if (null != entity) {
 				log.info("Persisted the entity :" + entity.toString());
 				getJmsCounter().incrementParam(JMSCounter.PROCESSED_SUCCESSFULLY);
@@ -119,10 +120,10 @@ public class FlightInformationProcessorJob extends AbstractFIProcessorJob
 		return (IATA_AIDX_FlightLegNotifRQ) getDnataMetaDataExtractor().extractMetadata(getSource());
 	}
 
-	private String getFileName(IATA_AIDX_FlightLegNotifRQ extractedMetaData) {
+	private String getFileName(IATA_AIDX_FlightLegNotifRQ extractedMetaData,String attribute) {
 		int seqNumber = extractedMetaData.getSequenceNmbr();
 		String timeStamp = getCurrentTimeStamp();
-		return FileContentCreator.prefix + "_" + seqNumber + "_" + timeStamp;
+		return attribute + "_" + seqNumber + "_" + timeStamp;
 	}
 
 	private void handleDuplicateMessage(Object source, IATA_AIDX_FlightLegNotifRQ extractedMetadata) {

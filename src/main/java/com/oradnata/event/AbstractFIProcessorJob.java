@@ -44,7 +44,8 @@ public abstract class AbstractFIProcessorJob implements Runnable {
 
 	private String remoteFilePath = null;
 
-	private final String TIMESTAMP_FORMAT = "yyyy-MM-dd'T'hh:mm:ss.SSSZ";
+	//YYYYMMDDHH24MISSMS.xml.
+	private final String TIMESTAMP_FORMAT = "yyyyMMddHHmmssSSS";
 
 	private SimpleDateFormat sdf = new SimpleDateFormat(TIMESTAMP_FORMAT);
 
@@ -198,4 +199,5 @@ public abstract class AbstractFIProcessorJob implements Runnable {
 		Date now = new Date();
 		return getSdf().format(now);
 	}
+	
 }
