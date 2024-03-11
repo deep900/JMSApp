@@ -34,6 +34,13 @@ public class JMSConnectionDetails {
 		log.info("Printing the Connection factory name:" + connectionFactoryName);
 		return connectionFactoryName;
 	}
+	
+	public String getProviderURL() {
+		loadProperties();
+		String providerURL = properties.getProperty("jms.connection.provider.url");
+		log.info("JMS Connection provider URL:" + providerURL);
+		return providerURL;
+	}
 
 	private void loadProperties() {
 		properties = connector.getAppProperties();

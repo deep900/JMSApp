@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.oradnata.event;
 
 import java.io.File;

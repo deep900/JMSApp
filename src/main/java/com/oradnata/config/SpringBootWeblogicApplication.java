@@ -1,5 +1,6 @@
 package com.oradnata.config;
 
+import java.util.Hashtable;
 import java.util.Properties;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -47,10 +48,13 @@ public class SpringBootWeblogicApplication {
 	public ConnectionFactory getJmsConnectionFactory() {
 		ConnectionFactory connectionFactory = null;
 		try {
-			Context context = new InitialContext();
+			Hashtable env = new Hashtable();			
+			env.put("java.naming.factory.initial", "weblogic.jndi.WLInitialContextFactory");
+			env.put(Context.PROVIDER_URL,this.getJMSConnectionDetails().getProviderURL());		
+			Context context = new InitialContext(env);
 			String connectionFactoryName = this.getJMSConnectionDetails().getConnectionFactoryName();
-			LOGGER.info("Connection lookup;" + connectionFactoryName);
-			connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
+			LOGGER.info("Connection lookup;" + connectionFactoryName);			
+			connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);			
 		} catch (NamingException e) {
 			LOGGER.error("Error while lookup", e);
 		}
